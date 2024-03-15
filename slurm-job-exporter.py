@@ -5,6 +5,7 @@ import re
 import sys
 import psutil
 import os
+import fcntl
 from functools import lru_cache
 from wsgiref.simple_server import make_server, WSGIRequestHandler
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
@@ -78,7 +79,12 @@ def cgroup_gpus(job_dir, cgroups):
         cgroup_path = os.path.join(job_dir, "gpu_probe")
         # This will create a new cgroup under the root of the job.
         # This is required for v2 since we can only add tasks to leaf cgroups
-        os.mkdir(cgroup_path)
+        fd = os.open(job_dir)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            os.mkdir(cgroup_path)
+        except Exception:
+            os.close(fd)
         task_file = os.path.join(cgroup_path, "cgroup.procs")
     try:
         res = subprocess.check_output(["get_gpus.sh", task_file]).strip().decode()
@@ -89,6 +95,7 @@ def cgroup_gpus(job_dir, cgroups):
         if cgroups == 2:
             # We can remove a cgroup if no tasks are remaining inside
             os.rmdir(cgroup_path)
+            os.close(fd)
 
     gpus = []
 
