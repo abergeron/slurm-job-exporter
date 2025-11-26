@@ -567,12 +567,14 @@ per elapsed cycle)',
                     metrics["gauge_power_gpu"].add_metric(
                         [user, account, job, str(gpu), gpu_type],
                         dcgm_data[gpu_uuid]['power_usage'] * 1000)  # convert to mW
-                    metrics["gauge_utilization_gpu"].add_metric(
-                        [user, account, job, str(gpu), gpu_type],
-                        dcgm_data[gpu_uuid]['sm_active'] * 100)  # convert to %
-                    metrics["gauge_memory_utilization_gpu"].add_metric(
-                        [user, account, job, str(gpu), gpu_type],
-                        dcgm_data[gpu_uuid]['dram_active'] * 100)  # convert to %
+                    if dcgm_fields.DCGM_FI_PROF_SM_ACTIVE in self.used_metrics:
+                        metrics["gauge_utilization_gpu"].add_metric(
+                            [user, account, job, str(gpu), gpu_type],
+                            dcgm_data[gpu_uuid]['sm_active'] * 100)  # convert to %
+                    if dcgm_fields.DCGM_FI_PROF_DRAM_ACTIVE in self.used_metrics:
+                        metrics["gauge_memory_utilization_gpu"].add_metric(
+                            [user, account, job, str(gpu), gpu_type],
+                            dcgm_data[gpu_uuid]['dram_active'] * 100)  # convert to %
 
                     # Convert to % to keep the same format as NVML
                     if 'sm_occupancy' in dcgm_data[gpu_uuid]:
